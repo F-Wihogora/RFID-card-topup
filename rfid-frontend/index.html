@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>RFID Dashboard</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: white;
+}
+
+.dashboard {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    padding: 40px;
+    border-radius: 20px;
+    width: 350px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+h2 {
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+.info {
+    margin: 15px 0;
+    font-size: 18px;
+}
+
+.balance {
+    font-size: 28px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: #00ffcc;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+    outline: none;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    background: #00ffcc;
+    color: #1e3c72;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+button:hover {
+    background: #00ddb3;
+    transform: scale(1.03);
+}
+
+.status {
+    margin-top: 15px;
+    font-size: 14px;
+    opacity: 0.8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="dashboard">
+    <h2>RFID Card Dashboard</h2>
+
+    <div class="info">
+        UID: <span id="uid">Waiting...</span>
+    </div>
+
+    <div class="info">
+        Balance:
+        <div class="balance" id="balance">0</div>
+    </div>
+
+    <input type="number" id="amount" placeholder="Enter top-up amount">
+
+    <button onclick="topup()">Top Up</button>
+
+    <div class="status" id="status">System ready</div>
+</div>
+
+<script>
+const ws = new WebSocket("ws://localhost:8081");
+
+ws.onopen = () => {
+    document.getElementById("status").innerText = "Connected to server";
+};
+
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    document.getElementById("uid").innerText = data.uid;
+    document.getElementById("balance").innerText =
+        data.balance || data.new_balance;
+};
+
+ws.onerror = () => {
+    document.getElementById("status").innerText = "WebSocket connection error";
+};
+
+function topup() {
+    const amount = document.getElementById("amount").value;
+    const uid = document.getElementById("uid").innerText;
+
+    if (!uid || uid === "Waiting...") {
+        alert("No card detected!");
+        return;
+    }
+
+    fetch("http://localhost:3000/topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid, amount: parseInt(amount) })
+    })
+    .then(() => {
+        document.getElementById("status").innerText = "Top-up request sent";
+        document.getElementById("amount").value = "";
+    });
+}
+</script>
+
+</body>
+</html>
