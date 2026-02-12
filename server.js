@@ -1,61 +1,82 @@
-const express = require("express");
-const mqtt = require("mqtt");
-const WebSocket = require("ws");
-const cors = require("cors");
+const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
+const mqtt = require('mqtt');
 
 const app = express();
-app.use(express.json());
-app.use(cors());
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-const teamId = "its_ace"; // change if you want
+// === YOUR CONFIG ===
+const TEAM_ID = 'its_florissa';  // Must match your ESP8266
+const MQTT_BROKER = '157.173.101.159'; // Testing — change to '157.173.101.59' later
+const MQTT_PORT = 1883;
 
-const MQTT_BROKER = "mqtt://157.173.101.159"; // temporary public broker
+const STATUS_TOPIC  = `rfid/${TEAM_ID}/card/status`;
+const BALANCE_TOPIC = `rfid/${TEAM_ID}/card/balance`;
+const TOPUP_TOPIC   = `rfid/${TEAM_ID}/card/topup`;
 
-const mqttClient = mqtt.connect(MQTT_BROKER);
-
-const wss = new WebSocket.Server({ port: 8081 });
-
-let clients = [];
-
-wss.on("connection", (ws) => {
-  clients.push(ws);
+// MQTT Client
+const mqttClient = mqtt.connect(`mqtt://${MQTT_BROKER}:${MQTT_PORT}`, {
+  clientId: `backend_${TEAM_ID}_${Math.random().toString(16).slice(3)}`
 });
 
-function broadcast(data) {
-  clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
+mqttClient.on('connect', () => {
+  console.log('MQTT connected to broker');
+  mqttClient.subscribe([STATUS_TOPIC, BALANCE_TOPIC], (err) => {
+    if (!err) console.log(`Subscribed to ${STATUS_TOPIC} and ${BALANCE_TOPIC}`);
   });
-}
-
-mqttClient.on("connect", () => {
-  console.log("Connected to MQTT");
-  mqttClient.subscribe(`rfid/${teamId}/card/status`);
-  mqttClient.subscribe(`rfid/${teamId}/card/balance`);
 });
 
-mqttClient.on("message", (topic, message) => {
-  console.log("MQTT Message Received:");
-  console.log("Topic:", topic);
-  console.log("Message:", message.toString());
+mqttClient.on('message', (topic, message) => {
+  try {
+    const payload = JSON.parse(message.toString());
+    console.log(`MQTT message on ${topic}:`, payload);
 
-  const data = JSON.parse(message.toString());
-  broadcast(data);
+    // Send with 'data' key to match dashboard
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ topic, data: payload }));
+console.log('[WS] Sent to client:', { topic, data: payload });
+      }
+    });
+  } catch (e) {
+    console.error('Invalid MQTT message:', e);
+  }
 });
 
+mqttClient.on('error', (err) => console.error('MQTT error:', err));
 
-app.post("/topup", (req, res) => {
+// HTTP middleware
+app.use(express.json());
+
+// POST /topup - from dashboard
+app.post('/topup', (req, res) => {
   const { uid, amount } = req.body;
 
-  mqttClient.publish(
-    `rfid/${teamId}/card/topup`,
-    JSON.stringify({ uid, amount })
-  );
+  if (!uid || typeof amount !== 'number' || amount <= 0) {
+    return res.status(400).json({ error: 'Invalid uid or amount (>0)' });
+  }
 
-  res.json({ message: "Top-up sent" });
+  const payload = JSON.stringify({ uid, amount });
+  mqttClient.publish(TOPUP_TOPIC, payload);
+  console.log(`Published top-up to ${TOPUP_TOPIC}:`, payload);
+
+  res.json({ success: true, message: 'Top-up command sent' });
 });
 
-app.listen(3000, () => {
-  console.log("HTTP running on port 3000");
+// WebSocket connection
+wss.on('connection', (ws) => {
+  console.log('Dashboard connected via WebSocket');
+  ws.send(JSON.stringify({ message: 'Connected to real-time updates' }));
+
+  ws.on('close', () => console.log('Dashboard disconnected'));
+});
+
+// Serve dashboard (optional - put index.html in same folder)
+app.use(express.static(__dirname));
+
+const PORT = process.env.PORT || 9279;
+server.listen(PORT, () => {
+  console.log(`Backend running on port ${PORT}`);
 });

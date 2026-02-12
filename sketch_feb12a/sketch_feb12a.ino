@@ -11,7 +11,7 @@ const char* ssid = "EdNet";
 const char* password = "Huawei@123";
 
 const char* mqtt_server = "157.173.101.159";
-const char* teamId = "its_ace";
+const char* teamId = "its_florissa";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
