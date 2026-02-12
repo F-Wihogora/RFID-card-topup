@@ -1,145 +1,256 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="scroll-smooth">
 <head>
-<meta charset="UTF-8">
-<title>RFID Dashboard</title>
-
-<style>
-body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    color: white;
-}
-
-.dashboard {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    padding: 40px;
-    border-radius: 20px;
-    width: 350px;
-    text-align: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-h2 {
-    margin-bottom: 25px;
-    font-weight: 600;
-}
-
-.info {
-    margin: 15px 0;
-    font-size: 18px;
-}
-
-.balance {
-    font-size: 28px;
-    font-weight: bold;
-    margin-top: 10px;
-    color: #00ffcc;
-}
-
-input {
-    width: 100%;
-    padding: 12px;
-    margin-top: 20px;
-    border-radius: 10px;
-    border: none;
-    font-size: 16px;
-    outline: none;
-}
-
-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
-    border-radius: 10px;
-    border: none;
-    font-size: 16px;
-    font-weight: bold;
-    background: #00ffcc;
-    color: #1e3c72;
-    cursor: pointer;
-    transition: 0.3s ease;
-}
-
-button:hover {
-    background: #00ddb3;
-    transform: scale(1.03);
-}
-
-.status {
-    margin-top: 15px;
-    font-size: 14px;
-    opacity: 0.8;
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RFID Card Top-Up Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Optional: Heroicons for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* Custom subtle gradient background */
+    body {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    }
+    .dark body {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    }
+  </style>
 </head>
+<body class="min-h-screen font-sans antialiased text-gray-800 dark:text-gray-200 transition-colors duration-300">
 
-<body>
+  <!-- Header -->
+  <header class="bg-white dark:bg-gray-800 shadow-md">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+        <i class="fas fa-rfid mr-2"></i> RFID Top-Up System
+      </h1>
+      <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-moon text-xl"></i>
+      </button>
+    </div>
+  </header>
 
-<div class="dashboard">
-    <h2>RFID Card Dashboard</h2>
+  <!-- Main Content -->
+  <main class="max-w-4xl mx-auto px-6 py-10">
+    <!-- Current Balance Display (NEW - prominent) -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl shadow-2xl p-8 mb-10 text-center transform transition-all hover:scale-105">
+      <h2 class="text-3xl font-bold mb-2">Current Balance</h2>
+      <p id="currentBalance" class="text-5xl font-extrabold">
+        -- RWF
+      </p>
+      <p id="currentUid" class="text-lg mt-2 opacity-90">
+        Waiting for first scan...
+      </p>
+      <p class="text-sm mt-4 opacity-80">Last updated: <span id="lastUpdate">--</span></p>
+    </div>
+    <!-- Top-Up Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-10 transform transition-all hover:shadow-2xl">
+      <h2 class="text-3xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-100">
+        Top Up Your Card
+      </h2>
 
-    <div class="info">
-        UID: <span id="uid">Waiting...</span>
+      <form id="topupForm" class="space-y-6">
+        <div>
+          <label for="uid" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Card UID
+          </label>
+          <input
+            type="text"
+            id="uid"
+            required
+            placeholder="e.g. 56389904F3"
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition"
+          />
+        </div>
+
+        <div>
+          <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Amount to Add (RWF)
+          </label>
+          <input
+            type="number"
+            id="amount"
+            min="100"
+            step="100"
+            required
+            placeholder="500"
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-lg shadow-md transition transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300"
+        >
+          <i class="fas fa-plus mr-2"></i> Top Up Now
+        </button>
+      </form>
+
+      <!-- Feedback Messages -->
+      <div id="feedback" class="mt-6 text-center hidden"></div>
     </div>
 
-    <div class="info">
-        Balance:
-        <div class="balance" id="balance">0</div>
+    <!-- Real-Time Updates Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+      <h2 class="text-2xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-100">
+        Live Balance Updates
+      </h2>
+      <div id="updates" class="space-y-4 max-h-96 overflow-y-auto">
+        <!-- Updates will appear here dynamically -->
+        <p class="text-gray-500 dark:text-gray-400 text-center italic">
+          Waiting for card scans or top-ups...
+        </p>
+      </div>
     </div>
+  </main>
 
-    <input type="number" id="amount" placeholder="Enter top-up amount">
+  <!-- Footer -->
+  <footer class="bg-gray-100 dark:bg-gray-900 py-6 text-center text-sm text-gray-600 dark:text-gray-400">
+    RFID Top-Up System • Team <span id="teamId">its_ace</span> • 2026
+  </footer>
 
-    <button onclick="topup()">Top Up</button>
+  <script>
+    // === CONFIG ===
+   const BACKEND_URL = 'http:157.173.101.159:9279';
+   const WS_URL = BACKEND_URL.replace(/^http/, "ws");
+ // auto ws:// or wss://
 
-    <div class="status" id="status">System ready</div>
-</div>
+    // Theme toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+    themeToggle.addEventListener('click', () => {
+      html.classList.toggle('dark');
+      localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
 
-<script>
-const ws = new WebSocket("ws://localhost:8081");
-
-ws.onopen = () => {
-    document.getElementById("status").innerText = "Connected to server";
-};
-
-ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-
-    document.getElementById("uid").innerText = data.uid;
-    document.getElementById("balance").innerText =
-        data.balance || data.new_balance;
-};
-
-ws.onerror = () => {
-    document.getElementById("status").innerText = "WebSocket connection error";
-};
-
-function topup() {
-    const amount = document.getElementById("amount").value;
-    const uid = document.getElementById("uid").innerText;
-
-    if (!uid || uid === "Waiting...") {
-        alert("No card detected!");
-        return;
+    // Load saved theme
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      html.classList.add('dark');
     }
 
-    fetch("http://localhost:3000/topup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid, amount: parseInt(amount) })
-    })
-    .then(() => {
-        document.getElementById("status").innerText = "Top-up request sent";
-        document.getElementById("amount").value = "";
-    });
-}
-</script>
+    // WebSocket connection
+    const ws = new WebSocket(WS_URL);
+    const updatesDiv = document.getElementById('updates');
+    const currentBalanceEl = document.getElementById('currentBalance');
+    const currentUidEl = document.getElementById('currentUid');
+    const lastUpdateEl = document.getElementById('lastUpdate');
+    const feedback = document.getElementById('feedback');
 
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      updatesDiv.innerHTML = '<p class="text-green-600 dark:text-green-400 text-center">Connected to real-time updates</p>';
+    };
+
+    ws.onmessage = (event) => {
+  console.log('Raw WS message received:', event.data);  // Keep for debug
+
+  try {
+    const msg = JSON.parse(event.data);
+
+    // Skip the initial welcome message (it has no 'topic')
+    if (msg.message && msg.message.includes('Connected')) {
+      console.log('Welcome message received - ignoring for display');
+      return;
+    }
+
+    // Now process real updates
+    const topic = msg.topic.split('/').pop(); // status or balance
+    const data = msg.data || msg.payload;     // support both key names
+
+    let displayText = '';
+    let balanceValue = null;
+    let uidValue = data.uid || 'unknown';
+
+    if (topic.includes('status')) {
+      balanceValue = data.balance;
+      displayText = `Card scanned → UID: <strong>${uidValue}</strong> | Balance: <strong>${balanceValue} RWF</strong>`;
+    } else if (topic.includes('balance')) {
+      balanceValue = data.new_balance;
+      displayText = `Balance updated → UID: <strong>${uidValue}</strong> | New Balance: <strong>${balanceValue} RWF</strong>`;
+    } else {
+      displayText = `Unknown update: ${JSON.stringify(data)}`;
+    }
+
+    // Update the big current balance card
+    if (balanceValue !== null) {
+      currentBalanceEl.textContent = `${balanceValue.toLocaleString()} RWF`;
+      currentUidEl.textContent = `UID: ${uidValue}`;
+      lastUpdateEl.textContent = new Date().toLocaleTimeString();
+    }
+
+    // Add to updates list
+    const entry = document.createElement('div');
+    entry.className = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-sm border-l-4 border-indigo-500 animate-fade-in';
+    entry.innerHTML = `<p class="font-medium">${displayText}</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${new Date().toLocaleTimeString()}</p>`;
+    updatesDiv.prepend(entry);
+    updatesDiv.scrollTop = 0;
+
+  } catch (e) {
+    console.error('WS parse error:', e, 'Raw:', event.data);
+    // Show error in updates (optional)
+    updatesDiv.innerHTML += `<p class="text-red-600 text-center mt-2">Parse error: ${e.message}</p>`;
+  }
+};
+
+    ws.onclose = () => {
+      updatesDiv.innerHTML += '<p class="text-red-600 dark:text-red-400 text-center mt-4">Connection lost — reconnecting...</p>';
+    };
+
+    // Top-up form submission
+    document.getElementById('topupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const uid = document.getElementById('uid').value.trim().toUpperCase();
+      const amount = parseInt(document.getElementById('amount').value);
+
+      if (!uid || isNaN(amount) || amount <= 0) {
+        showFeedback('Please enter valid UID and amount > 0', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/topup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid, amount })
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          showFeedback(`Top-up request sent successfully! (Amount: ${amount} RWF)`, 'success');
+          document.getElementById('topupForm').reset();
+        } else {
+          showFeedback(result.error || 'Failed to send top-up', 'error');
+        }
+      } catch (err) {
+        showFeedback('Connection error: ' + err.message, 'error');
+      }
+    });
+
+    function showFeedback(text, type = 'success') {
+      feedback.textContent = text;
+      feedback.className = `p-4 rounded-lg text-center font-medium ${
+        type === 'success'
+          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+      }`;
+      feedback.classList.remove('hidden');
+      setTimeout(() => feedback.classList.add('hidden'), 5000);
+    }
+  </script>
+
+  <!-- Fade-in animation -->
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+  </style>
 </body>
 </html>
